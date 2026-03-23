@@ -4,7 +4,7 @@
 [![NuGet](https://img.shields.io/nuget/v/Philiprehberger.JsonPatch.svg)](https://www.nuget.org/packages/Philiprehberger.JsonPatch)
 [![License](https://img.shields.io/github/license/philiprehberger/dotnet-json-patch)](LICENSE)
 
-RFC 6902 JSON Patch operations for System.Text.Json — apply, generate, and parse add/remove/replace/move/copy/test patches.
+RFC 6902 JSON Patch operations for System.Text.Json — apply, generate, and parse patch documents.
 
 ## Installation
 

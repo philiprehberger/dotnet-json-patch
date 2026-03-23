@@ -8,9 +8,9 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>Philiprehberger.JsonPatch</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>Philip Rehberger</Authors>
-    <Description>RFC 6902 JSON Patch operations for System.Text.Json — apply, generate, and parse add/remove/replace/move/copy/test patches.</Description>
+    <Description>RFC 6902 JSON Patch operations for System.Text.Json — apply, generate, and parse patch documents.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>json;patch;rfc6902;diff;system-text-json</PackageTags>
