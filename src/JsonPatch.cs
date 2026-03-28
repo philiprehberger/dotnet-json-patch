@@ -36,6 +36,65 @@ public static class JsonPatch
     }
 
     /// <summary>
+    /// Generates a reverse (undo) patch that, when applied after the forward patch,
+    /// restores the document to its original state.
+    /// </summary>
+    /// <param name="patch">The forward patch document to reverse.</param>
+    /// <param name="original">The original document before patching.</param>
+    /// <returns>A new <see cref="JsonPatchDocument"/> containing the reverse operations.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="patch"/> is <c>null</c>.</exception>
+    public static JsonPatchDocument GenerateReverse(JsonPatchDocument patch, JsonNode? original)
+    {
+        ArgumentNullException.ThrowIfNull(patch);
+        return ReversePatchGenerator.GenerateReverse(patch, original);
+    }
+
+    /// <summary>
+    /// Pre-checks whether a patch can be cleanly applied to a document, returning
+    /// a validation result with any errors found without modifying the document.
+    /// </summary>
+    /// <param name="patch">The patch document to validate.</param>
+    /// <param name="document">The target JSON document.</param>
+    /// <returns>A <see cref="ValidationResult"/> indicating whether the patch is valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="patch"/> is <c>null</c>.</exception>
+    public static ValidationResult Validate(JsonPatchDocument patch, JsonNode? document)
+    {
+        ArgumentNullException.ThrowIfNull(patch);
+        return PatchValidator.Validate(patch, document);
+    }
+
+    /// <summary>
+    /// Merges two patch documents into a single equivalent patch by concatenating
+    /// their operations and simplifying where possible (e.g., collapsing adjacent
+    /// replace operations on the same path).
+    /// </summary>
+    /// <param name="first">The first patch to apply.</param>
+    /// <param name="second">The second patch to apply after the first.</param>
+    /// <returns>A new <see cref="JsonPatchDocument"/> containing the composed operations.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="first"/> or <paramref name="second"/> is <c>null</c>.</exception>
+    public static JsonPatchDocument Compose(JsonPatchDocument first, JsonPatchDocument second)
+    {
+        ArgumentNullException.ThrowIfNull(first);
+        ArgumentNullException.ThrowIfNull(second);
+        return PatchComposer.Compose(first, second);
+    }
+
+    /// <summary>
+    /// Applies patch operations individually, collecting successes and failures rather
+    /// than stopping on the first error. Returns the partially-patched document and
+    /// a list of failed operations with their error messages.
+    /// </summary>
+    /// <param name="patch">The patch document to apply.</param>
+    /// <param name="document">The target JSON document.</param>
+    /// <returns>A <see cref="PartialApplicationResult"/> containing the result.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="patch"/> is <c>null</c>.</exception>
+    public static PartialApplicationResult ApplyPartial(JsonPatchDocument patch, JsonNode? document)
+    {
+        ArgumentNullException.ThrowIfNull(patch);
+        return PartialApplier.ApplyPartial(patch, document);
+    }
+
+    /// <summary>
     /// Parses a JSON string containing an array of RFC 6902 patch operations
     /// into a <see cref="JsonPatchDocument"/>.
     /// </summary>

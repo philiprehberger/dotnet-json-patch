@@ -2,7 +2,11 @@
 
 [![CI](https://github.com/philiprehberger/dotnet-json-patch/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/dotnet-json-patch/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Philiprehberger.JsonPatch.svg)](https://www.nuget.org/packages/Philiprehberger.JsonPatch)
+[![GitHub release](https://img.shields.io/github/v/release/philiprehberger/dotnet-json-patch)](https://github.com/philiprehberger/dotnet-json-patch/releases)
+[![Last updated](https://img.shields.io/github/last-commit/philiprehberger/dotnet-json-patch)](https://github.com/philiprehberger/dotnet-json-patch/commits/main)
 [![License](https://img.shields.io/github/license/philiprehberger/dotnet-json-patch)](LICENSE)
+[![Bug Reports](https://img.shields.io/github/issues/philiprehberger/dotnet-json-patch/bug)](https://github.com/philiprehberger/dotnet-json-patch/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+[![Feature Requests](https://img.shields.io/github/issues/philiprehberger/dotnet-json-patch/enhancement)](https://github.com/philiprehberger/dotnet-json-patch/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement)
 [![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ec6cb9)](https://github.com/sponsors/philiprehberger)
 
 RFC 6902 JSON Patch operations for System.Text.Json — apply, generate, and parse patch documents.
@@ -14,8 +18,6 @@ dotnet add package Philiprehberger.JsonPatch
 ```
 
 ## Usage
-
-### Apply a Patch
 
 ```csharp
 using System.Text.Json.Nodes;
@@ -68,21 +70,81 @@ var result = patchDoc.Apply(JsonNode.Parse("""{"name": "Alice", "age": 30}"""));
 // {"name":"Bob"}
 ```
 
-### Test Operations
+### Reverse Patch Generation
+
+```csharp
+using System.Text.Json.Nodes;
+using Philiprehberger.JsonPatch;
+
+var original = JsonNode.Parse("""{"name": "Alice", "age": 30}""");
+var patch = new JsonPatchDocument(new[]
+{
+    PatchOperation.Replace("/name", JsonValue.Create("Bob")),
+    PatchOperation.Remove("/age")
+});
+
+var patched = patch.Apply(original);
+var reverse = JsonPatch.GenerateReverse(patch, JsonNode.Parse("""{"name": "Alice", "age": 30}"""));
+var restored = reverse.Apply(patched);
+// restored = {"name":"Alice","age":30}
+```
+
+### Patch Validation
 
 ```csharp
 using System.Text.Json.Nodes;
 using Philiprehberger.JsonPatch;
 
 var document = JsonNode.Parse("""{"name": "Alice"}""");
+var patch = new JsonPatchDocument(new[]
+{
+    PatchOperation.Remove("/nonexistent")
+});
 
-// Test passes — value matches
-var ops = new[] { PatchOperation.Test("/name", JsonValue.Create("Alice")) };
-var result = JsonPatch.Apply(document, ops);
+var result = JsonPatch.Validate(patch, document);
+// result.IsValid == false
+// result.Errors[0].Message contains "does not exist"
+```
 
-// Test fails — throws InvalidOperationException
-var failing = new[] { PatchOperation.Test("/name", JsonValue.Create("Bob")) };
-JsonPatch.Apply(document, failing); // throws
+### Patch Composition
+
+```csharp
+using System.Text.Json.Nodes;
+using Philiprehberger.JsonPatch;
+
+var first = new JsonPatchDocument(new[]
+{
+    PatchOperation.Replace("/name", JsonValue.Create("Bob"))
+});
+var second = new JsonPatchDocument(new[]
+{
+    PatchOperation.Add("/email", JsonValue.Create("bob@example.com"))
+});
+
+var composed = JsonPatch.Compose(first, second);
+var result = composed.Apply(JsonNode.Parse("""{"name": "Alice"}"""));
+// {"name":"Bob","email":"bob@example.com"}
+```
+
+### Partial Application
+
+```csharp
+using System.Text.Json.Nodes;
+using Philiprehberger.JsonPatch;
+
+var document = JsonNode.Parse("""{"name": "Alice"}""");
+var patch = new JsonPatchDocument(new[]
+{
+    PatchOperation.Replace("/name", JsonValue.Create("Bob")),
+    PatchOperation.Remove("/nonexistent"),
+    PatchOperation.Add("/age", JsonValue.Create(30))
+});
+
+var result = JsonPatch.ApplyPartial(patch, document);
+// result.IsFullyApplied == false
+// result.Applied.Count == 2
+// result.Failures.Count == 1
+// result.Document = {"name":"Bob","age":30}
 ```
 
 ## API
@@ -94,6 +156,10 @@ JsonPatch.Apply(document, failing); // throws
 | `Apply(JsonNode?, IEnumerable<PatchOperation>)` | Apply patch operations to a document, returning a modified copy |
 | `Diff(JsonNode?, JsonNode?)` | Generate patch operations that transform one document into another |
 | `Parse(string)` | Parse a JSON array of RFC 6902 operations into a `JsonPatchDocument` |
+| `GenerateReverse(JsonPatchDocument, JsonNode?)` | Generate a reverse patch that undoes the given forward patch |
+| `Validate(JsonPatchDocument, JsonNode?)` | Pre-check whether a patch can be cleanly applied to a document |
+| `Compose(JsonPatchDocument, JsonPatchDocument)` | Merge two patches into a single equivalent patch |
+| `ApplyPartial(JsonPatchDocument, JsonNode?)` | Apply operations individually, collecting successes and failures |
 
 ### `JsonPatchDocument`
 
@@ -118,12 +184,49 @@ JsonPatch.Apply(document, failing); // throws
 | `Copy(string, string)` | Create a copy operation |
 | `Test(string, JsonNode?)` | Create a test operation |
 
+### `ValidationResult`
+
+| Member | Description |
+|--------|-------------|
+| `IsValid` | Whether the patch can be cleanly applied without errors |
+| `Errors` | List of validation errors encountered |
+
+### `ValidationError`
+
+| Member | Description |
+|--------|-------------|
+| `Operation` | The patch operation that failed validation |
+| `Message` | Description of why the operation would fail |
+
+### `PartialApplicationResult`
+
+| Member | Description |
+|--------|-------------|
+| `Document` | The document after applying all successful operations |
+| `Applied` | Operations that were successfully applied |
+| `Failures` | Operations that failed with their error messages |
+| `IsFullyApplied` | Whether all operations were successfully applied |
+
+### `OperationFailure`
+
+| Member | Description |
+|--------|-------------|
+| `Operation` | The patch operation that failed |
+| `Error` | Error message describing why the operation failed |
+
 ## Development
 
 ```bash
 dotnet build src/Philiprehberger.JsonPatch.csproj --configuration Release
 ```
 
+## Support
+
+If you find this package useful, consider giving it a star on GitHub — it helps motivate continued maintenance and development.
+
+[![LinkedIn](https://img.shields.io/badge/Philip%20Rehberger-LinkedIn-0A66C2?logo=linkedin)](https://www.linkedin.com/in/philiprehberger)
+[![More packages](https://img.shields.io/badge/more-open%20source%20packages-blue)](https://philiprehberger.com/open-source-packages)
+
 ## License
 
-MIT
+[MIT](LICENSE)

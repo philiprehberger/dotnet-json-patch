@@ -8,7 +8,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>Philiprehberger.JsonPatch</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
     <Authors>Philip Rehberger</Authors>
     <Description>RFC 6902 JSON Patch operations for System.Text.Json — apply, generate, and parse patch documents.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
